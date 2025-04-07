@@ -1,0 +1,4 @@
+Model Directory: models7
+Final Test Metrics:
+loss: 0.2123
+compile_metrics: 0.9217
