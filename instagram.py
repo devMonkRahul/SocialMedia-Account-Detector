@@ -3,7 +3,13 @@ import time
 import random
 import json
 from typing import Dict, Optional
+from dotenv import load_dotenv
+import os
 
+# Load environment variables from .env file
+load_dotenv()
+
+session_id = os.getenv("INSTAGRAM_SESSION_ID")
 class InstagramScraper:
     def __init__(self):
         self.base_url = "https://www.instagram.com"
@@ -20,7 +26,7 @@ class InstagramScraper:
             'Sec-Fetch-Mode': 'cors',
             'Sec-Fetch-Dest': 'empty',
             'Connection': 'keep-alive',
-            'cookie': 'sessionid=7549261131%3AhJvEq4ZEURydAP%3A8%3AAYcwyouwn4AY4xJ7MjjpY-9IEz6O55V7jo76qz2VPg;'  # Replace with your session ID
+            'cookie': f'sessionid={session_id}'  # Replace with your session ID
         }
         self.session = requests.Session()
 
