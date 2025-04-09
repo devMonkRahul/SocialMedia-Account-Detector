@@ -29,6 +29,7 @@ class InstagramScraper:
             'cookie': f'sessionid={session_id}'  # Replace with your session ID
         }
         self.session = requests.Session()
+        self.userData = {}
 
     def get_user_data(self, username: str) -> Optional[Dict]:
         """
@@ -84,7 +85,9 @@ class InstagramScraper:
                 'user_follower_count': user_data.get('edge_followed_by', {}).get('count', 0),
                 'user_following_count': user_data.get('edge_follow', {}).get('count', 0),
                 'user_has_profil_pic': bool(user_data.get('profile_pic_url')),
+                'user_profile_pic': user_data.get('profile_pic_url_hd'),
                 'user_is_private': user_data.get('is_private', False),
+                'user_biography': user_data.get('biography', ''),
                 'user_biography_length': len(user_data.get('biography', '')),
                 'username_length': len(username),
                 'username_digit_count': sum(c.isdigit() for c in username),
@@ -98,7 +101,7 @@ class InstagramScraper:
                 'has_guides': user_data.get('has_guides', False),
                 'has_external_url': bool(user_data.get('external_url'))
             }
-
+            self.userData = processed_data
             return processed_data
 
         except requests.exceptions.RequestException as e:

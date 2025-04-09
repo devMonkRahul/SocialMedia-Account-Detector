@@ -44,6 +44,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setProfileImage(imageUrl, username) {
+        const imageLoader = document.getElementById('imageLoader');
+        const profileImage = document.getElementById('profileImage');
+        
+        // Show loader and hide image
+        imageLoader.classList.remove('hidden');
+        profileImage.classList.add('hidden');
+        
         // Create a new image object to test loading
         const img = new Image();
         
@@ -51,8 +58,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Image loaded successfully
             profileImage.src = imageUrl;
             profileImage.alt = `@${username}'s profile picture`;
-            // Add a class to handle the transition
-            profileImage.classList.add('loaded');
+            // Show image and hide loader
+            profileImage.classList.remove('hidden');
+            imageLoader.classList.add('hidden');
         };
         
         img.onerror = function() {
@@ -63,7 +71,8 @@ document.addEventListener('DOMContentLoaded', () => {
             proxyImg.onload = function() {
                 profileImage.src = proxyUrl;
                 profileImage.alt = `@${username}'s profile picture`;
-                profileImage.classList.add('loaded');
+                profileImage.classList.remove('hidden');
+                imageLoader.classList.add('hidden');
             };
             
             proxyImg.onerror = function() {
@@ -71,7 +80,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const fallbackUrl = `https://ui-avatars.com/api/?name=${username}&size=300&background=random`;
                 profileImage.src = fallbackUrl;
                 profileImage.alt = `Generated avatar for @${username}`;
-                profileImage.classList.add('loaded');
+                profileImage.classList.remove('hidden');
+                imageLoader.classList.add('hidden');
             };
             
             proxyImg.src = proxyUrl;

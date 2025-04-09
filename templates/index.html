@@ -136,8 +136,11 @@
             <!-- Analysis Result (Initially Hidden) -->
             <div id="result" class="hidden">
                 <div class="flex gap-8 p-6 bg-white rounded-xl shadow-sm">
-                    <div class="w-32 h-32 rounded-xl overflow-hidden shadow-sm">
-                        <img id="profileImage" src="" alt="Profile" class="w-full h-full object-cover">
+                    <div class="w-32 h-32 rounded-xl overflow-hidden shadow-sm relative">
+                        <div id="imageLoader" class="absolute inset-0 flex items-center justify-center bg-gray-100">
+                            <div class="animate-spin rounded-full h-8 w-8 border-4 border-instagram-purple border-t-transparent"></div>
+                        </div>
+                        <img id="profileImage" src="" alt="Profile" class="w-full h-full object-cover hidden">
                     </div>
                     <div class="flex-1">
                         <h2 id="username" class="text-xl font-semibold text-instagram-dark mb-2"></h2>

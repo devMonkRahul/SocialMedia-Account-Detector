@@ -96,7 +96,7 @@ def analyze():
         app.logger.debug(f"Raw user_data received for {username}: {json.dumps(user_data, indent=2)}")
 
         if prediction is None or user_data is None:
-            error_message = f"Couldn't fetch data for @{username}. The profile might be private, non-existent, or Instagram blocked the request."
+            error_message = f"Couldn't fetch data for @{username}. The profile might be non-existent, or Instagram blocked the request."
             app.logger.warning(error_message)
             return jsonify({'error': error_message}), 404
         
@@ -137,15 +137,14 @@ def analyze():
             f"Has Numbers in Full Name: {'Yes' if bool(user_data['full_name_has_number']) else 'No'}",
             f"Is Private: {'Yes' if bool(user_data['is_private']) else 'No'}"
         ]
-        
+        userData = tester.scraper.userData
         # Prepare response with explicit type conversion
-        profile_image_url = str(user_data.get('profile_pic_url', f'https://ui-avatars.com/api/?name={username}&size=300&background=random'))
+        profile_image_url = str(userData.get('user_profile_pic', f'https://ui-avatars.com/api/?name={username}&size=300&background=random'))
         app.logger.debug(f"Final profile_pic_url being sent to frontend: {profile_image_url}")
-        
         response = {
             'profileImage': profile_image_url,
             'username': str(username),
-            'bio': str(user_data.get('biography', 'No bio available')),
+            'bio': str(userData.get('user_biography', 'No bio available')),
             'isFake': is_fake,
             'realProbability': float(round(real_probability, 2)),
             'fakeProbability': float(round(fake_probability, 2)),
