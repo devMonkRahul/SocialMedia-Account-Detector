@@ -9,10 +9,22 @@ import os
 # Load environment variables from .env file
 load_dotenv()
 
-session_id = os.getenv("INSTAGRAM_SESSION_ID")
+admin_username = os.getenv("IG_USERNAME")
+admin_password = os.getenv("IG_PASSWORD")
+
 class InstagramScraper:
-    def __init__(self):
+    def __init__(self, session_id: str = None):
         self.base_url = "https://www.instagram.com"
+        self.session = requests.Session()
+        self.userData = {}
+        
+        # Try to login if credentials are provided
+        if session_id:
+            self.session_id = session_id
+        else:
+            self.session_id = self._perform_login(admin_username, admin_password)
+            
+        # Set up default headers with session ID
         self.headers = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
             'Accept': '*/*',
@@ -26,33 +38,66 @@ class InstagramScraper:
             'Sec-Fetch-Mode': 'cors',
             'Sec-Fetch-Dest': 'empty',
             'Connection': 'keep-alive',
-            'cookie': f'sessionid={session_id}'  # Replace with your session ID
+            'cookie': f'sessionid={self.session_id}'
         }
-        self.session = requests.Session()
-        self.userData = {}
+        
+        # Update session headers
+        self.session.headers.update(self.headers)
+
+    def _perform_login(self, username: str, password: str) -> str:
+        """Internal method to handle Instagram login"""
+        login_url = "https://www.instagram.com/accounts/login/ajax/"
+        
+        # Get CSRF token
+        self.session.get("https://www.instagram.com/")
+        csrf_token = self.session.cookies.get("csrftoken")
+        
+        headers = {
+            "User-Agent": "Mozilla/5.0",
+            "X-Requested-With": "XMLHttpRequest",
+            "Referer": "https://www.instagram.com/accounts/login/",
+            "X-CSRFToken": csrf_token
+        }
+        self.session.headers.update(headers)
+
+        payload = {
+            "username": username,
+            "enc_password": f"#PWD_INSTAGRAM_BROWSER:0:&:{password}",
+            "queryParams": {},
+            "optIntoOneTap": "false"
+        }
+
+        res = self.session.post(login_url, data=payload, allow_redirects=True)
+
+        if res.status_code == 200 and res.json().get("authenticated"):
+            session_id = self.session.cookies.get("sessionid")
+            print(f"[✅] Logged in successfully as {username}")
+            return session_id
+        else:
+            print(f"[❌] Login failed: {res.text}")
+            return ""
 
     def get_user_data(self, username: str) -> Optional[Dict]:
         """
         Fetch user data using Instagram's GraphQL API
         """
         try:
-            # Initialize session and get CSRF token
             init_url = f"{self.base_url}/{username}/"
             init_response = self.session.get(
-                init_url,
-                headers=self.headers,
+                url=init_url,
                 timeout=10
             )
             
             if init_response.status_code != 200:
                 raise Exception(f"Failed to initialize: HTTP {init_response.status_code}")
 
-            # Update headers with CSRF token and referer
+            # Update headers with new CSRF token and referer
             csrf_token = init_response.cookies.get('csrftoken', '')
             self.headers.update({
                 'X-CSRFToken': csrf_token,
                 'Referer': f'https://www.instagram.com/{username}/',
             })
+            self.session.headers.update(self.headers)
 
             # Add delay to avoid rate limiting
             time.sleep(random.uniform(1, 2))
@@ -60,8 +105,7 @@ class InstagramScraper:
             # Make GraphQL API request
             api_url = f"{self.base_url}/api/v1/users/web_profile_info/?username={username}"
             response = self.session.get(
-                api_url,
-                headers=self.headers,
+                url=api_url,
                 timeout=10
             )
 
@@ -112,9 +156,11 @@ class InstagramScraper:
             return None
 
 def main():
+    # Create scraper instance with automatic login
+    scraper = InstagramScraper()
+    
     print("Instagram Profile Data Extractor")
     print("================================")
-    print("Note: Make sure to set your Instagram session ID in the code")
     
     while True:
         username = input("\nEnter Instagram URL or username (or 'quit' to exit): ")
@@ -134,14 +180,19 @@ def main():
             continue
             
         print(f"\nFetching data for @{username}...")
-        scraper = InstagramScraper()
-        user_data = scraper.get_user_data(username)
         
-        if user_data:
-            print("\nExtracted Instagram Data:")
-            print(json.dumps(user_data, indent=2))
+        if scraper.session_id:  # Check if we have a valid session
+            user_data = scraper.get_user_data(username)
+            
+            if user_data:
+                print("\nExtracted Instagram Data:")
+                print(json.dumps(user_data, indent=2))
+            else:
+                print(f"\nCouldn't fetch data for @{username}")
         else:
-            print(f"\nCouldn't fetch data for @{username}")
+            print("\nNot logged in. Please check your credentials.")
+        
+        time.sleep(random.uniform(1, 2))
                 
     print("\nThank you for using Instagram Profile Data Extractor!")
 
