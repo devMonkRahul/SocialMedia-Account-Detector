@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="static/icon.png" type="image/png">
+    <title>Fake Profile Detector - Model Comparison</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        instagram: {
+                            purple: '#833ab4',
+                            pink: '#e1306c',
+                            orange: '#f77737',
+                            yellow: '#fcaf45',
+                            blue: '#0095f6',
+                            dark: '#262626',
+                            light: '#fafafa'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .bg-pattern {
+            background-image: 
+                radial-gradient(circle at 80% 0%, rgba(131, 58, 180, 0.3) 0%, transparent 70%),
+                radial-gradient(circle at 0% 50%, rgba(225, 48, 108, 0.3) 0%, transparent 70%),
+                radial-gradient(circle at 80% 50%, rgba(252, 175, 69, 0.3) 0%, transparent 70%),
+                radial-gradient(circle at 0% 100%, rgba(131, 58, 180, 0.3) 0%, transparent 70%),
+                radial-gradient(circle at 80% 100%, rgba(247, 119, 55, 0.3) 0%, transparent 70%),
+                radial-gradient(circle at 0% 0%, rgba(252, 175, 69, 0.3) 0%, transparent 70%);
+            opacity: 1;
+            background-size: 100% 100%;
+            background-position: center;
+        }
+
+        .bg-dots {
+            background-image: 
+                radial-gradient(circle at 10px 10px, rgba(131, 58, 180, 0.2) 3px, transparent 0),
+                radial-gradient(circle at 30px 30px, rgba(225, 48, 108, 0.2) 3px, transparent 0);
+            background-size: 40px 40px;
+            opacity: 1;
+        }
+
+        .bg-lines {
+            background: 
+                linear-gradient(45deg, transparent 48%, rgba(131, 58, 180, 0.2) 49%, rgba(131, 58, 180, 0.2) 51%, transparent 52%),
+                linear-gradient(-45deg, transparent 48%, rgba(225, 48, 108, 0.2) 49%, rgba(225, 48, 108, 0.2) 51%, transparent 52%);
+            background-size: 50px 50px;
+            animation: moveLines 15s linear infinite;
+            opacity: 1;
+        }
+
+        @keyframes moveLines {
+            from {
+                background-position: 0 0;
+            }
+            to {
+                background-position: 50px 50px;
+            }
+        }
+
+        body {
+            background: linear-gradient(135deg, 
+                rgba(131, 58, 180, 0.2),
+                rgba(225, 48, 108, 0.2),
+                rgba(252, 175, 69, 0.2)
+            );
+        }
+
+        .progress-bar {
+            height: 8px;
+            border-radius: 4px;
+            transition: width 1s ease-in-out;
+        }
+
+        .model-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .model-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen p-8 relative">
+    <!-- Background Elements -->
+    <div class="fixed inset-0 bg-pattern"></div>
+    <div class="fixed inset-0 bg-dots"></div>
+    <div class="fixed inset-0 bg-lines"></div>
+
+    <div class="max-w-6xl mx-auto bg-white/95 backdrop-blur-lg rounded-3xl p-8 shadow-xl border border-white/20 relative z-10">
+        <h1 class="text-4xl font-bold text-center mb-8 bg-gradient-to-r from-instagram-purple via-instagram-pink to-instagram-orange bg-clip-text text-transparent">
+            Fake Profile Detector - Model Comparison
+        </h1>
+        
+        <div class="bg-white rounded-xl p-6 shadow-sm border border-gray-100 mb-8">
+            <div class="flex gap-4">
+                <input 
+                    type="text" 
+                    id="profileUrl" 
+                    placeholder="Enter Instagram profile URL (e.g., https://www.instagram.com/username)" 
+                    class="flex-1 px-4 py-3 rounded-lg border-2 border-gray-200 focus:border-instagram-blue focus:outline-none focus:ring-2 focus:ring-instagram-blue/20 transition-all"
+                >
+                <button 
+                    id="analyzeBtn"
+                    class="px-6 py-3 bg-gradient-to-r from-instagram-purple via-instagram-pink to-instagram-orange text-white font-semibold rounded-lg hover:shadow-lg transform hover:-translate-y-0.5 transition-all"
+                >
+                    Analyze
+                </button>
+                <button 
+                    id="resetBtn"
+                    class="px-6 py-3 bg-instagram-dark text-white font-semibold rounded-lg hover:bg-black transition-all"
+                >
+                    Reset
+                </button>
+            </div>
+        </div>
+
+        <div id="loading" class="hidden text-center text-instagram-dark font-semibold py-8">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-instagram-purple border-t-transparent"></div>
+            <p class="mt-4">Analyzing profile...</p>
+        </div>
+
+        <div id="error" class="hidden bg-red-50 text-red-700 p-4 rounded-lg border-l-4 border-red-500 mb-4">
+        </div>
+
+        <div class="profile-window bg-white/80 backdrop-blur-sm rounded-xl p-6 shadow-sm border border-gray-100 min-h-[400px] relative z-10">
+            <!-- Profile Preview Placeholder -->
+            <div id="preview" class="profile-preview">
+                <div class="flex flex-col items-center justify-center p-8 border-2 border-dashed border-instagram-purple/30 rounded-xl bg-white/50">
+                    <div class="w-24 h-24 rounded-full bg-instagram-purple/10 flex items-center justify-center">
+                        <svg class="w-12 h-12 text-instagram-purple/50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </div>
+                    <div class="mt-6 text-center">
+                        <p class="text-gray-600">Enter an Instagram profile URL above to analyze</p>
+                        <p class="text-sm text-gray-400 italic mt-2">Example: https://www.instagram.com/username</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Analysis Result (Initially Hidden) -->
+            <div id="result" class="hidden">
+                <!-- Profile Header -->
+                <div class="flex gap-8 p-6 bg-white rounded-xl shadow-sm mb-8">
+                    <div class="w-32 h-32 rounded-xl overflow-hidden shadow-sm relative">
+                        <div id="imageLoader" class="absolute inset-0 flex items-center justify-center bg-gray-100">
+                            <div class="animate-spin rounded-full h-8 w-8 border-4 border-instagram-purple border-t-transparent"></div>
+                        </div>
+                        <img id="profileImage" src="" alt="Profile" class="w-full h-full object-cover hidden">
+                    </div>
+                    <div class="flex-1">
+                        <h2 id="username" class="text-xl font-semibold text-instagram-dark mb-2"></h2>
+                        <p id="bio" class="text-gray-500"></p>
+                    </div>
+                </div>
+
+                <!-- Model Comparison Section -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- TensorFlow Model Card -->
+                    <div class="model-card bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                        <h3 class="text-lg font-semibold text-instagram-dark mb-4">TensorFlow Model</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-gray-600">Real Probability</span>
+                                    <span id="tfRealProb" class="font-semibold"></span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div id="tfRealBar" class="progress-bar bg-green-500"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-gray-600">Fake Probability</span>
+                                    <span id="tfFakeProb" class="font-semibold"></span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div id="tfFakeBar" class="progress-bar bg-red-500"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- XGBoost Model Card -->
+                    <div class="model-card bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                        <h3 class="text-lg font-semibold text-instagram-dark mb-4">XGBoost Model</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-gray-600">Real Probability</span>
+                                    <span id="xgbRealProb" class="font-semibold"></span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div id="xgbRealBar" class="progress-bar bg-green-500"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between mb-2">
+                                    <span class="text-gray-600">Fake Probability</span>
+                                    <span id="xgbFakeProb" class="font-semibold"></span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                    <div id="xgbFakeBar" class="progress-bar bg-red-500"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ensemble Result -->
+                <div class="mt-8 bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+                    <h3 class="text-lg font-semibold text-instagram-dark mb-4">Ensemble Result</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-gray-600">Real Probability</span>
+                                <span id="ensembleRealProb" class="font-semibold"></span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div id="ensembleRealBar" class="progress-bar bg-green-500"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-2">
+                                <span class="text-gray-600">Fake Probability</span>
+                                <span id="ensembleFakeProb" class="font-semibold"></span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5">
+                                <div id="ensembleFakeBar" class="progress-bar bg-red-500"></div>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <span id="finalVerdict" class="text-xl font-bold"></span>
+                            <p id="confidenceLevel" class="text-gray-600 mt-2"></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="static/script2.js"></script>
+</body>
+</html> 
