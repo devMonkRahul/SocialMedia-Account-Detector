@@ -119,6 +119,8 @@ def analyze():
         # Get predictions from both models
         ensemble_prediction, tf_prediction, xgb_prediction, user_data = tester.predict_account(username)
 
+        app.logger.debug(f"Raw user_data received for {username}: {json.dumps(user_data, indent=2)}")
+
         if ensemble_prediction is None or user_data is None:
             error_message = f"Couldn't fetch data for @{username}. The profile might be non-existent, or Instagram blocked the request."
             app.logger.warning(error_message)
